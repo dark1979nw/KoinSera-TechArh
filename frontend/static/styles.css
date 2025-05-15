@@ -1,0 +1,54 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    transform: translateY(-1px);
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+#error {
+    margin-bottom: 1rem;
+}
+
+.table-responsive {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.table td, .table th {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+} 
