@@ -6,8 +6,8 @@ import time
 from sqlalchemy.exc import OperationalError
 from sqlalchemy import text
 # Get database URL from environment variable or use default
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@postgres-master:5432/postgres")
-
+#DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@postgres-master:5432/postgres")
+DATABASE_URL = os.getenv("DATABASE_URL","")
 # Create SQLAlchemy engine with connection retry logic
 def get_engine(max_retries=5, retry_interval=5):
     for attempt in range(max_retries):
