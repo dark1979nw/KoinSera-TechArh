@@ -1,21 +1,37 @@
 #version: '3.8'
 
 services:
-  nginx:
-    build: ./nginx
-    ports:
-      - "80:80"
+  backend-1:
+    build: ./backend
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-master:5432/postgres
     depends_on:
-      frontend-1:
+      postgres-master:
         condition: service_healthy
-      frontend-2:
-        condition: service_healthy
-      backend-1:
-        condition: service_healthy
-      backend-2:
-        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - app-network
+
+  backend-2:
+    build: ./backend
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-master:5432/postgres
+    depends_on:
+      postgres-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app-network
+      
+
 
   frontend-1:
     build: ./frontend
@@ -50,37 +66,22 @@ services:
       retries: 3
     networks:
       - app-network
-
-  backend-1:
-    build: ./backend
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres-master:5432/postgres
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
     depends_on:
-      postgres-master:
+      frontend-1:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      frontend-2:
+        condition: service_healthy
+      backend-1:
+        condition: service_healthy
+      backend-2:
+        condition: service_healthy
     networks:
       - app-network
-
-  backend-2:
-    build: ./backend
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres-master:5432/postgres
-    depends_on:
-      postgres-master:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    networks:
-      - app-network
-
+      
   postgres-master:
     image: postgres:17.5
     environment:
