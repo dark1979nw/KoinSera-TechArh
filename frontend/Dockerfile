@@ -1,13 +1,36 @@
-FROM python:3.9-slim
+# Build stage
+FROM node:20-alpine as build
 
 WORKDIR /app
 
-# Install curl for healthchecks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Copy package files
+COPY package*.json ./
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies
+RUN npm install
 
+# Copy source code
 COPY . .
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"] 
+# Build the app
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+
+# Install wget for healthcheck
+RUN apk add --no-cache wget
+
+# Copy built assets from build stage
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:80/health || exit 1
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"] 
