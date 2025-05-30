@@ -1,0 +1,39 @@
+{
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "signUp": "Sign Up",
+    "hasAccount": "Already have an account? Sign in",
+    "noAccount": "Don't have an account? Sign up",
+    "logout": "Logout",
+    "loginError": "Invalid login or password",
+    "registerError": "Registration failed. Please try again.",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "company": "Company (Optional)"
+  },
+  "validation": {
+    "passwordMatch": "Passwords do not match",
+    "required": "{{field}} is required",
+    "email": "Please enter a valid email address",
+    "passwordLength": "Password must be at least 8 characters long",
+    "passwordRequirements": "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+    "loginLength": "Login must be between 3 and 50 characters",
+    "loginAlphanumeric": "Login must contain only letters and numbers",
+    "nameLength": "Name must be between 1 and 50 characters",
+    "companyLength": "Company name must not exceed 100 characters"
+  },
+  "dashboard": {
+    "welcome": "Welcome to KoinSera",
+    "loggedInAs": "Logged in as",
+    "name": "Name",
+    "company": "Company"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred"
+  }
+} 

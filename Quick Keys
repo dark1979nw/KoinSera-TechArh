@@ -1,0 +1,15 @@
+Quick Keys
+
+docker compose up --build
+docker compose down --kill
+
+docker compose build backend-1
+ docker compose up -d backend-2
+
+ Запустить все заново - используйте docker-compose up -d
+Запустить с логами - используйте docker-compose up
+Запустить только определенные сервисы - используйте docker-compose up -d [service-name]
+Что бы вы хотели сделать дальше?
+
+
+Пароль для тестов Test123!@#
