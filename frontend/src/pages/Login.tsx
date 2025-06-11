@@ -11,7 +11,7 @@ import {
   Paper,
   Alert,
 } from '@mui/material';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext.tsx';
 
 export default function Login() {
   const { t } = useTranslation();
@@ -20,7 +20,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    login: '',
+    username: '',
     password: '',
   });
 
@@ -30,7 +30,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await login(formData.login, formData.password);
+      await login(formData.username, formData.password);
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login error in dashboard:', err.response?.data);
@@ -88,12 +88,12 @@ export default function Login() {
               margin="normal"
               required
               fullWidth
-              id="login"
+              id="username"
               label={t('auth.login')}
-              name="login"
+              name="username"
               autoComplete="username"
               autoFocus
-              value={formData.login}
+              value={formData.username}
               onChange={handleChange}
             />
             <TextField

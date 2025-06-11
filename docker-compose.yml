@@ -5,6 +5,8 @@ services:
     build: ./backend
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres-master:5432/postgres
+    ports:
+      - "8000:8000"
     depends_on:
       postgres-master:
         condition: service_healthy
@@ -20,6 +22,8 @@ services:
     build: ./backend
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres-master:5432/postgres
+    ports:
+      - "8001:8000"
     depends_on:
       postgres-master:
         condition: service_healthy

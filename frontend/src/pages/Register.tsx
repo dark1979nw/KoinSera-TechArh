@@ -12,7 +12,7 @@ import {
   Alert,
   Grid,
 } from '@mui/material';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext.tsx';
 
 interface RegisterFormData {
   login: string;

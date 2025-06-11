@@ -13,7 +13,11 @@
     "registerError": "Registration failed. Please try again.",
     "firstName": "First Name",
     "lastName": "Last Name",
-    "company": "Company (Optional)"
+    "company": "Company (Optional)",
+    "loginButton": "Login",
+    "registerButton": "Register",
+    "haveAccount": "Already have an account?"
+    
   },
   "validation": {
     "passwordMatch": "Passwords do not match",
@@ -30,10 +34,33 @@
     "welcome": "Welcome to KoinSera",
     "loggedInAs": "Logged in as",
     "name": "Name",
-    "company": "Company"
+    "company": "Company",
+    "title": "Dashboard",
+    "navigation": {
+      "chats": "Chats",
+      "users": "Users",
+      "bots": "Bots",
+      "profile": "Profile",
+      "finance": "Finance",
+      "admin": "Administration"
+    }
   },
   "common": {
     "loading": "Loading...",
     "error": "An error occurred"
+  },
+  "admin": {
+    "title": "Administration",
+    "users": {
+      "login": "Login",
+      "email": "Email",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "company": "Company",
+      "language": "Language",
+      "isAdmin": "Admin",
+      "createdAt": "Created At",
+      "lastLogin": "Last Login"
+    }
   }
 } 

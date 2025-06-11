@@ -18,6 +18,7 @@ class User(Base):
     company = Column(String(100))
     language_code = Column(String(2), ForeignKey('languages.code'))
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login = Column(DateTime)

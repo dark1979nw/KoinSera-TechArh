@@ -1,65 +1,59 @@
-import { useAuth } from '../hooks/useAuth';
-import { useTranslation } from 'react-i18next';
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Paper,
-} from '@mui/material';
+//import { useTranslation } from 'react-i18next';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Box, CssBaseline, Drawer, Toolbar } from '@mui/material';
+import Header from '../components/dashboard/Header';
+import Navigation from '../components/dashboard/Navigation';
+import Admin from './dashboard/Admin';
+
+// Placeholder components for each section
+const Chats = () => <div>Chats Page</div>;
+const Users = () => <div>Users Page</div>;
+const Bots = () => <div>Bots Page</div>;
+const Profile = () => <div>Profile Page</div>;
+const Finance = () => <div>Finance Page</div>;
+
+const drawerWidth = 240;
 
 export default function Dashboard() {
-  const { t } = useTranslation();
-  const { user, logout } = useAuth();
+ // const { t } = useTranslation();
 
   return (
-    <Container component="main" maxWidth="md">
-      <Box
+    <Box sx={{ display: 'flex' }}>
+      <CssBaseline />
+      <Header />
+      <Drawer
+        variant="permanent"
         sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          width: drawerWidth,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+          },
         }}
       >
-        <Paper
-          elevation={3}
-          sx={{
-            padding: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            width: '100%',
-          }}
-        >
-          <Typography component="h1" variant="h4" gutterBottom>
-            {t('dashboard.welcome')}
-          </Typography>
-          
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Typography variant="body1" gutterBottom>
-              {t('dashboard.loggedInAs')}: {user?.email}
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              {t('dashboard.name')}: {user?.first_name} {user?.last_name}
-            </Typography>
-            {user?.company && (
-              <Typography variant="body1" gutterBottom>
-                {t('dashboard.company')}: {user.company}
-              </Typography>
-            )}
-          </Box>
-
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={logout}
-            sx={{ mt: 3 }}
-          >
-            {t('auth.logout')}
-          </Button>
-        </Paper>
+        <Toolbar /> {/* This creates space for the fixed header */}
+        <Navigation />
+      </Drawer>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+        }}
+      >
+        <Toolbar /> {/* This creates space for the fixed header */}
+        <Routes>
+          <Route path="/" element={<Navigate to="chats" replace />} />
+          <Route path="chats" element={<Chats />} />
+          <Route path="users" element={<Users />} />
+          <Route path="bots" element={<Bots />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="finance" element={<Finance />} />
+          <Route path="admin" element={<Admin />} />
+        </Routes>
       </Box>
-    </Container>
+    </Box>
   );
 } 

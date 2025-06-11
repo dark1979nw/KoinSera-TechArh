@@ -7,9 +7,6 @@ declare module 'axios';
 // Use relative path for API calls
 const API_URL = '';
 
-// Configure axios defaults
-axios.defaults.withCredentials = true;
-
 interface User {
   id: number;
   login: string;
@@ -50,14 +47,14 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     console.log('Attempting to login with:', { username, password: '***' });
     
     try {
-      const formData = new FormData();
+      const formData = new URLSearchParams();
       formData.append('username', username);
       formData.append('password', password);
 
       console.log('Sending login request to:', `${API_URL}/api/auth/token`);
       const response = await axios.post(`${API_URL}/api/auth/token`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'application/x-www-form-urlencoded'
         }
       });
       console.log('Login response:', response.data);
@@ -72,9 +69,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       try {
         console.log('Fetching user data from:', `${API_URL}/api/auth/me`);
         // Get user data
-        const userResponse = await axios.get(`${API_URL}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${access_token}` }
-        });
+        const userResponse = await axios.get(`${API_URL}/api/auth/me`);
         console.log('User data response:', userResponse.data);
         setUser(userResponse.data);
       } catch (error: any) {
@@ -150,14 +145,6 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     setUser(null);
   }, []);
 
-  // Initialize axios interceptors
-  axios.interceptors.request.use((config) => {
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  });
-
   const value = {
     user,
     token,
@@ -177,7 +164,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth must be used within an AuthProvider and only there');
   }
   return context;
 } 

@@ -73,6 +73,7 @@ class UserResponse(BaseModel):
     email: str
     company: Optional[str]
     language_code: Optional[str]
+    is_admin: bool
 
     class Config:
         from_attributes = True

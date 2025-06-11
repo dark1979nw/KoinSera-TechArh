@@ -1,0 +1,22 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "dashboard": "Dashboard"
+  },
+  "auth": {
+    "login": "Login",
+    "signIn": "Sign In",
+    "register": "Register",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "loginError": "Login error. Please check your credentials and try again.",
+    "registerError": "Registration error. Please try again.",
+    "noAccount": "Don't have an account? Sign Up",
+    "haveAccount": "Already have an account? Sign In"
+  },
+  "home": {
+    "workingOnCreation": "Working on creation"
+  }
+} 

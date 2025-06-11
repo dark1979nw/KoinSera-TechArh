@@ -1,19 +1,17 @@
 {
   "auth": {
-    "login": "Логин",
+    "login": "Вход",
     "register": "Регистрация",
+    "logout": "Выход",
     "email": "Email",
     "password": "Пароль",
-    "confirmPassword": "Подтвердите пароль",
-    "signUp": "Зарегистрироваться",
-    "hasAccount": "Уже есть аккаунт? Войти",
-    "noAccount": "Нет аккаунта? Зарегистрироваться",
-    "logout": "Выйти",
-    "loginError": "Неверный логин или пароль",
-    "registerError": "Ошибка регистрации. Пожалуйста, попробуйте снова.",
+    "loginButton": "Войти",
+    "registerButton": "Зарегистрироваться",
+    "noAccount": "Нет аккаунта?",
+    "haveAccount": "Уже есть аккаунт?",
     "firstName": "Имя",
     "lastName": "Фамилия",
-    "company": "Компания (необязательно)"
+    "company": "Компания"
   },
   "validation": {
     "passwordMatch": "Пароли не совпадают",
@@ -30,10 +28,33 @@
     "welcome": "Добро пожаловать в KoinSera",
     "loggedInAs": "Вы вошли как",
     "name": "Имя",
-    "company": "Компания"
+    "company": "Компания",
+    "title": "Панель управления",
+    "navigation": {
+      "chats": "Чаты",
+      "users": "Пользователи",
+      "bots": "Боты",
+      "profile": "Профиль",
+      "finance": "Финансы",
+      "admin": "Администрирование"
+    }
   },
   "common": {
     "loading": "Загрузка...",
     "error": "Произошла ошибка"
+  },
+  "admin": {
+    "title": "Администрирование",
+    "users": {
+      "login": "Логин",
+      "email": "Email",
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "company": "Компания",
+      "language": "Язык",
+      "isAdmin": "Администратор",
+      "createdAt": "Дата создания",
+      "lastLogin": "Последний вход"
+    }
   }
 } 
