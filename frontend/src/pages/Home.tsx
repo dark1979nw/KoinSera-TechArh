@@ -5,7 +5,9 @@ import { useAuth } from '../contexts/AuthContext.tsx';
 import { Logout } from '@mui/icons-material';
 
 export default function Home() {
-  const { t } = useTranslation();
+
+  const { t, ready } = useTranslation();
+  console.log('t(home.workingOnCreation):', t('home.workingOnCreation'));
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
 
@@ -13,6 +15,10 @@ export default function Home() {
     logout();
     navigate('/');
   };
+
+  if (!ready) {
+    return <Typography>Loading...</Typography>;
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>

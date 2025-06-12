@@ -41,9 +41,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 async def get_current_user(request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    logger.info(f"Request headers: {request.headers}")
-    logger.info(f"Token from OAuth2PasswordBearer: {token}")
-    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -51,15 +48,8 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
     )
     
     if not token:
-        # Попробуем получить токен напрямую из заголовков
-        auth_header = request.headers.get("Authorization")
-        logger.info(f"Authorization header: {auth_header}")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header[7:]
-            logger.info(f"Extracted token from Authorization header: {token[:10]}...")
-        else:
-            logger.warning("No token found in request")
-            raise credentials_exception
+        logger.warning("No token provided")
+        raise credentials_exception
     
     try:
         # Убираем префикс "Bearer " если он есть
@@ -86,6 +76,14 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
             logger.warning(f"User not found: {username}")
             raise credentials_exception
             
+        if not user.is_active:
+            logger.warning(f"Inactive user attempted to access: {username}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account is inactive",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+            
         logger.info(f"User found: {user.login}, is_admin: {user.is_admin}")
         return user
         
@@ -107,6 +105,14 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not user.is_active:
+        logger.warning(f"Login attempt for inactive user: {form_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive",
             headers={"WWW-Authenticate": "Bearer"},
         )
     

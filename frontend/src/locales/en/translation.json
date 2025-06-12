@@ -1,22 +1,76 @@
 {
   "common": {
+    "yes": "Yes",
+    "no": "No",
+    "dashboard": "Dashboard",
     "loading": "Loading...",
-    "dashboard": "Dashboard"
+    "error": "An error occurred"
   },
   "auth": {
+    "accountInactive": "Account is inactive. Please contact administrator",
     "login": "Login",
-    "signIn": "Sign In",
+    "logout": "Logout",
     "register": "Register",
-    "signUp": "Sign Up",
     "email": "Email",
     "password": "Password",
     "confirmPassword": "Confirm Password",
-    "loginError": "Login error. Please check your credentials and try again.",
-    "registerError": "Registration error. Please try again.",
-    "noAccount": "Don't have an account? Sign Up",
-    "haveAccount": "Already have an account? Sign In"
+    "signUp": "Sign Up",
+    "hasAccount": "Already have an account? Sign in",
+    "noAccount": "Don't have an account? Sign up",
+    "loginError": "Invalid login or password",
+    "registerError": "Registration failed. Please try again.",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "company": "Company (Optional)",
+    "loginButton": "Login",
+    "registerButton": "Register",
+    "haveAccount": "Already have an account?"
   },
   "home": {
-    "workingOnCreation": "Working on creation"
+    "workingOnCreation": "We are working on creating something amazing!"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "users": {
+      "title": "Users",
+      "login": "Login",
+      "email": "Email",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "company": "Company",
+      "language": "Language",
+      "isActive": "Active",
+      "isAdmin": "Administrator",
+      "createdAt": "Created At",
+      "lastLogin": "Last Login"
+    }
+ },
+
+  "validation": {
+    "passwordMatch": "Passwords do not match",
+    "required": "{{field}} is required",
+    "email": "Please enter a valid email address",
+    "passwordLength": "Password must be at least 8 characters long",
+    "passwordRequirements": "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+    "loginLength": "Login must be between 3 and 50 characters",
+    "loginAlphanumeric": "Login must contain only letters and numbers",
+    "nameLength": "Name must be between 1 and 50 characters",
+    "companyLength": "Company name must not exceed 100 characters"
+  },
+  "dashboard": {
+    "welcome": "Welcome to KoinSera",
+    "loggedInAs": "Logged in as",
+    "name": "Name",
+    "company": "Company",
+    "title": "Dashboard",
+    "navigation": {
+      "chats": "Chats",
+      "users": "Users",
+      "bots": "Bots",
+      "profile": "Profile",
+      "finance": "Finance",
+      "admin": "Administration"
+    }
   }
-} 
+}
+ 

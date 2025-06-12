@@ -35,7 +35,9 @@ export default function Login() {
     } catch (err: any) {
       console.error('Login error in dashboard:', err.response?.data);
       if (err.response?.data?.detail) {
-        if (Array.isArray(err.response.data.detail)) {
+        if (err.response.status === 403 && err.response.data.detail === "Account is inactive") {
+          setError(t('auth.accountInactive'));
+        } else if (Array.isArray(err.response.data.detail)) {
           setError(err.response.data.detail.map((d: any) => d.msg).join(', '));
         } else {
           setError(err.response.data.detail);

@@ -11,6 +11,7 @@ class UserResponse(BaseModel):
     company: Optional[str]
     language_code: Optional[str]
     is_admin: bool
+    is_active: bool
     created_at: datetime
     last_login: Optional[datetime]
 

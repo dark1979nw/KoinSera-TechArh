@@ -13,3 +13,9 @@ docker compose build backend-1
 
 
 Пароль для тестов Test123!@#
+
+пересобрать фронт
+rm -rf dist node_modules/.vite
+npm run build
+
+docker compose build frontend-1 && docker compose up -d frontend-1 && docker compose build frontend-2 && docker compose up -d frontend-2

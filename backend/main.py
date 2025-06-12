@@ -30,4 +30,4 @@ app.include_router(admin_router.router, prefix="/api")
 @app.get("/health")
 def health_check():
     """Проверка работоспособности сервера"""
-    return {"status": "healthy"}
+    return {"status": "healthy"} 

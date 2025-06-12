@@ -8,7 +8,6 @@ import {
 import {
   DataGrid,
   GridColDef,
-  GridRenderCellParams,
   GridToolbar,
 } from '@mui/x-data-grid';
 import { api } from '../../contexts/AuthContext';
@@ -22,6 +21,7 @@ interface User {
   company: string | null;
   language_code: string;
   is_admin: boolean;
+  is_active: boolean;
   created_at: string;
   last_login: string | null;
 }
@@ -44,6 +44,7 @@ export default function AdminPanel() {
           }
         });
         console.log('Users response:', response.data);
+        console.log('First user data:', response.data[0]);
         setUsers(response.data);
       } catch (error: any) {
         console.error('Error fetching users:', error);
@@ -70,32 +71,92 @@ export default function AdminPanel() {
       field: 'company',
       headerName: t('admin.users.company'),
       width: 150,
-      valueGetter: (params: GridRenderCellParams) => {
-        return params?.row?.company || '-';
-      },
+      renderCell: (params) => {
+        return params.row.company || '-';
+      }
     },
     { field: 'language_code', headerName: t('admin.users.language'), width: 100 },
+    {
+      field: 'is_active',
+      headerName: t('admin.users.isActive'),
+      width: 100,
+      renderCell: (params) => (
+        <Box
+          sx={{
+            color: params.row.is_active ? 'success.main' : 'error.main',
+            fontWeight: 'bold'
+          }}
+        >
+          {params.row.is_active ? t('common.yes') : t('common.no')}
+        </Box>
+      )
+    },
     {
       field: 'is_admin',
       headerName: t('admin.users.isAdmin'),
       width: 100,
-      type: 'boolean',
+      renderCell: (params) => (
+        <Box
+          sx={{
+            color: params.row.is_admin ? 'success.main' : 'error.main',
+            fontWeight: 'bold'
+          }}
+        >
+          {params.row.is_admin ? t('common.yes') : t('common.no')}
+        </Box>
+      )
     },
     {
       field: 'created_at',
       headerName: t('admin.users.createdAt'),
       width: 180,
-      valueGetter: (params: GridRenderCellParams) => {
-        return params?.row?.created_at ? new Date(params.row.created_at).toLocaleString() : '-';
-      },
+      renderCell: (params) => {
+        const dateStr = params.row.created_at;
+        if (!dateStr) return '-';
+        
+        try {
+          const date = new Date(dateStr);
+          if (isNaN(date.getTime())) return '-';
+          
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          const seconds = String(date.getSeconds()).padStart(2, '0');
+          
+          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        } catch (e) {
+          console.error('Error formatting date:', e);
+          return '-';
+        }
+      }
     },
     {
       field: 'last_login',
       headerName: t('admin.users.lastLogin'),
       width: 180,
-      valueGetter: (params: GridRenderCellParams) => {
-        return params?.row?.last_login ? new Date(params.row.last_login).toLocaleString() : '-';
-      },
+      renderCell: (params) => {
+        const dateStr = params.row.last_login;
+        if (!dateStr) return '-';
+        
+        try {
+          const date = new Date(dateStr);
+          if (isNaN(date.getTime())) return '-';
+          
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          const seconds = String(date.getSeconds()).padStart(2, '0');
+          
+          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        } catch (e) {
+          console.error('Error formatting date:', e);
+          return '-';
+        }
+      }
     },
   ];
 
