@@ -4,6 +4,14 @@ import {
   Box,
   Paper,
   Typography,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   DataGrid,
@@ -11,9 +19,10 @@ import {
   GridToolbar,
 } from '@mui/x-data-grid';
 import { api } from '../../contexts/AuthContext';
+import { Lock, AdminPanelSettings, PersonOff, Person } from '@mui/icons-material';
 
 interface User {
-  id: number;
+  user_id: number;
   login: string;
   email: string;
   first_name: string;
@@ -26,43 +35,70 @@ interface User {
   last_login: string | null;
 }
 
+interface UserUpdate {
+  is_admin?: boolean;
+  is_active?: boolean;
+  password?: string;
+}
+
 export default function AdminPanel() {
   const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
+
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      console.log('Current token:', token);
+      
+      console.log('Fetching users...');
+      const response = await api.get('/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('Users response:', response.data);
+      console.log('First user data:', response.data[0]);
+      setUsers(response.data);
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.config?.headers
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        console.log('Current token:', token);
-        
-        console.log('Fetching users...');
-        const response = await api.get('/api/admin/users', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        console.log('Users response:', response.data);
-        console.log('First user data:', response.data[0]);
-        setUsers(response.data);
-      } catch (error: any) {
-        console.error('Error fetching users:', error);
-        console.error('Error details:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          headers: error.config?.headers
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
   }, []);
 
+  const handleUpdateUser = async (userId: number, updates: UserUpdate) => {
+    try {
+      await api.put(`/api/admin/users/${userId}`, updates);
+      await fetchUsers(); // Обновляем список пользователей
+    } catch (error) {
+      console.error('Error updating user:', error);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (selectedUser && newPassword) {
+      await handleUpdateUser(selectedUser.user_id, { password: newPassword });
+      setOpenPasswordDialog(false);
+      setNewPassword('');
+      setSelectedUser(null);
+    }
+  };
+
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 70 },
+    { field: 'user_id', headerName: 'ID', width: 70 },
     { field: 'login', headerName: t('admin.users.login'), width: 130 },
     { field: 'email', headerName: t('admin.users.email'), width: 200 },
     { field: 'first_name', headerName: t('admin.users.firstName'), width: 130 },
@@ -103,6 +139,42 @@ export default function AdminPanel() {
           }}
         >
           {params.row.is_admin ? t('common.yes') : t('common.no')}
+        </Box>
+      )
+    },
+    {
+      field: 'actions',
+      headerName: t('admin.users.actions'),
+      width: 200,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Tooltip title={t('admin.users.changePassword')}>
+            <IconButton
+              size="small"
+              onClick={() => {
+                setSelectedUser(params.row);
+                setOpenPasswordDialog(true);
+              }}
+            >
+              <Lock />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={params.row.is_admin ? t('admin.users.removeAdmin') : t('admin.users.makeAdmin')}>
+            <IconButton
+              size="small"
+              onClick={() => handleUpdateUser(params.row.user_id, { is_admin: !params.row.is_admin })}
+            >
+              <AdminPanelSettings color={params.row.is_admin ? 'primary' : 'action'} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={params.row.is_active ? t('admin.users.deactivate') : t('admin.users.activate')}>
+            <IconButton
+              size="small"
+              onClick={() => handleUpdateUser(params.row.user_id, { is_active: !params.row.is_active })}
+            >
+              {params.row.is_active ? <PersonOff /> : <Person />}
+            </IconButton>
+          </Tooltip>
         </Box>
       )
     },
@@ -169,12 +241,13 @@ export default function AdminPanel() {
         <DataGrid
           rows={users}
           columns={columns}
+          getRowId={(row) => row.user_id}
           initialState={{
             pagination: {
               paginationModel: { page: 0, pageSize: 10 },
             },
             sorting: {
-              sortModel: [{ field: 'id', sort: 'desc' }],
+              sortModel: [{ field: 'user_id', sort: 'desc' }],
             },
           }}
           pageSizeOptions={[10, 25, 50]}
@@ -189,6 +262,30 @@ export default function AdminPanel() {
           disableRowSelectionOnClick
         />
       </Paper>
+
+      {/* Диалог изменения пароля */}
+      <Dialog open={openPasswordDialog} onClose={() => setOpenPasswordDialog(false)}>
+        <DialogTitle>{t('admin.users.changePassword')}</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label={t('auth.password')}
+            type="password"
+            fullWidth
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenPasswordDialog(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button onClick={handlePasswordChange} color="primary">
+            {t('common.save')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 } 

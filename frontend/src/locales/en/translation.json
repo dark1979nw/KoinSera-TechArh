@@ -4,7 +4,9 @@
     "no": "No",
     "dashboard": "Dashboard",
     "loading": "Loading...",
-    "error": "An error occurred"
+    "error": "An error occurred",
+    "cancel": "Cancel",
+    "save": "Save"
   },
   "auth": {
     "accountInactive": "Account is inactive. Please contact administrator",
@@ -15,6 +17,7 @@
     "password": "Password",
     "confirmPassword": "Confirm Password",
     "signUp": "Sign Up",
+    "signIn": "Sign In",
     "hasAccount": "Already have an account? Sign in",
     "noAccount": "Don't have an account? Sign up",
     "loginError": "Invalid login or password",
@@ -42,10 +45,15 @@
       "isActive": "Active",
       "isAdmin": "Administrator",
       "createdAt": "Created At",
-      "lastLogin": "Last Login"
+      "lastLogin": "Last Login",
+      "actions": "Actions",
+      "changePassword": "Change Password",
+      "makeAdmin": "Make Administrator",
+      "removeAdmin": "Remove Administrator",
+      "activate": "Activate User",
+      "deactivate": "Deactivate User"
     }
- },
-
+  },
   "validation": {
     "passwordMatch": "Passwords do not match",
     "required": "{{field}} is required",
