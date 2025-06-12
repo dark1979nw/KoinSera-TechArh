@@ -22,7 +22,7 @@ import { api } from '../../contexts/AuthContext';
 import { Lock, AdminPanelSettings, PersonOff, Person } from '@mui/icons-material';
 
 interface User {
-  id: number;
+  user_id: number;
   login: string;
   email: string;
   first_name: string;
@@ -90,7 +90,7 @@ export default function AdminPanel() {
 
   const handlePasswordChange = async () => {
     if (selectedUser && newPassword) {
-      await handleUpdateUser(selectedUser.id, { password: newPassword });
+      await handleUpdateUser(selectedUser.user_id, { password: newPassword });
       setOpenPasswordDialog(false);
       setNewPassword('');
       setSelectedUser(null);
@@ -98,7 +98,7 @@ export default function AdminPanel() {
   };
 
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 70 },
+    { field: 'user_id', headerName: 'ID', width: 70 },
     { field: 'login', headerName: t('admin.users.login'), width: 130 },
     { field: 'email', headerName: t('admin.users.email'), width: 200 },
     { field: 'first_name', headerName: t('admin.users.firstName'), width: 130 },
@@ -162,7 +162,7 @@ export default function AdminPanel() {
           <Tooltip title={params.row.is_admin ? t('admin.users.removeAdmin') : t('admin.users.makeAdmin')}>
             <IconButton
               size="small"
-              onClick={() => handleUpdateUser(params.row.id, { is_admin: !params.row.is_admin })}
+              onClick={() => handleUpdateUser(params.row.user_id, { is_admin: !params.row.is_admin })}
             >
               <AdminPanelSettings color={params.row.is_admin ? 'primary' : 'action'} />
             </IconButton>
@@ -170,7 +170,7 @@ export default function AdminPanel() {
           <Tooltip title={params.row.is_active ? t('admin.users.deactivate') : t('admin.users.activate')}>
             <IconButton
               size="small"
-              onClick={() => handleUpdateUser(params.row.id, { is_active: !params.row.is_active })}
+              onClick={() => handleUpdateUser(params.row.user_id, { is_active: !params.row.is_active })}
             >
               {params.row.is_active ? <PersonOff /> : <Person />}
             </IconButton>
@@ -241,12 +241,13 @@ export default function AdminPanel() {
         <DataGrid
           rows={users}
           columns={columns}
+          getRowId={(row) => row.user_id}
           initialState={{
             pagination: {
               paginationModel: { page: 0, pageSize: 10 },
             },
             sorting: {
-              sortModel: [{ field: 'id', sort: 'desc' }],
+              sortModel: [{ field: 'user_id', sort: 'desc' }],
             },
           }}
           pageSizeOptions={[10, 25, 50]}

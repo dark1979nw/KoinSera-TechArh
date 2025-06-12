@@ -8,6 +8,7 @@ from schemas import UserResponse
 from routers.auth import get_current_user
 from security import get_password_hash
 from pydantic import BaseModel
+from datetime import datetime
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -17,6 +18,22 @@ router = APIRouter(
     prefix="/admin",
     tags=["admin"]
 )
+
+class UserResponse(BaseModel):
+    user_id: int
+    login: str
+    email: str
+    first_name: str
+    last_name: str
+    company: Optional[str] = None
+    language_code: str
+    is_active: bool
+    is_admin: bool
+    created_at: datetime
+    last_login: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
 
 class UserUpdate(BaseModel):
     is_admin: Optional[bool] = None
@@ -61,7 +78,7 @@ async def update_user(
             detail="Not enough permissions"
         )
     
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
