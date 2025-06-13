@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -19,11 +19,13 @@ class User(Base):
     language_code = Column(String(2), ForeignKey('languages.code'))
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     last_login = Column(DateTime)
     failed_login_attempts = Column(Integer, default=0)
     locked_until = Column(DateTime)
+
+    bots = relationship("Bot", back_populates="user")
 
     def check_password(self, password: str) -> bool:
         return verify_password(password, self.password_hash)
@@ -55,3 +57,16 @@ class Language(Base):
     is_default = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Bot(Base):
+    __tablename__ = "bots"
+
+    bot_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
+    bot_name = Column(String(100), nullable=False)
+    bot_token = Column(String(100), nullable=False)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    is_active = Column(Boolean, default=True)
+
+    user = relationship("User", back_populates="bots")

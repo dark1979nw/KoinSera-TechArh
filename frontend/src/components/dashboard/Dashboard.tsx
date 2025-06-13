@@ -4,29 +4,27 @@ import { useTranslation } from 'react-i18next';
 import {
   Box,
   Drawer,
-  AppBar,
-  Toolbar,
   List,
-  Typography,
   Divider,
-  IconButton,
   ListItem,
   ListItemIcon,
   ListItemText,
   useTheme,
   useMediaQuery,
+  Toolbar,
 } from '@mui/material';
 import {
-  Menu as MenuIcon,
-  ChevronLeft as ChevronLeftIcon,
   Dashboard as DashboardIcon,
   Person as PersonIcon,
-  ShoppingCart as ShoppingCartIcon,
+  SmartToy as SmartToyIcon,
   AccountBalanceWallet as AccountBalanceWalletIcon,
   Settings as SettingsIcon,
   AdminPanelSettings as AdminPanelSettingsIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+import Header from './Header';
+
+const drawerWidth = 240;
 
 const Dashboard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { t } = useTranslation();
@@ -47,22 +45,22 @@ const Dashboard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     {
       text: t('dashboard.navigation.users'),
       icon: <PersonIcon />,
-      path: '/dashboard/personal-info',
+      path: '/dashboard/users',
     },
     {
       text: t('dashboard.navigation.bots'),
-      icon: <ShoppingCartIcon />,
-      path: '/dashboard/orders',
+      icon: <SmartToyIcon />,
+      path: '/dashboard/bots',
     },
     {
       text: t('dashboard.navigation.profile'),
       icon: <AccountBalanceWalletIcon />,
-      path: '/dashboard/wallet',
+      path: '/dashboard/profile',
     },
     {
       text: t('dashboard.navigation.finance'),
       icon: <SettingsIcon />,
-      path: '/dashboard/settings',
+      path: '/dashboard/finance',
     },
     ...(isAdmin
       ? [
@@ -76,49 +74,54 @@ const Dashboard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   ];
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <AppBar position="fixed">
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            edge="start"
-            onClick={() => setOpen(!open)}
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            {t('dashboard.title')}
-          </Typography>
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Header with user info and logout */}
+      <Header />
+      {/* Drawer (sidebar) */}
       <Drawer
         variant={isMobile ? 'temporary' : 'permanent'}
         open={open}
         onClose={() => setOpen(false)}
+        sx={{
+          width: drawerWidth ,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+            position: 'fixed',
+            height: '100vh',
+            zIndex: (theme) => theme.zIndex.appBar - 1,
+          },
+        }}
       >
-        <Box sx={{ width: 240 }}>
-          <IconButton onClick={() => setOpen(false)}>
-            <ChevronLeftIcon />
-          </IconButton>
-          <Divider />
-          <List>
-            {menuItems.map((item) => (
-              <ListItem
-                button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                selected={location.pathname === item.path}
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      </Drawer>
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
+        <Divider />
+        <List>
+          {menuItems.map((item) => (
+            <ListItem
+              button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              selected={location.pathname === item.path}
+            >
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.text} />
+            </ListItem>
+          ))}
+        </List>
+      </Drawer>
+      {/* Main content with correct margin for header and drawer */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          ml: '64px',
+          mt: '64px', // AppBar height
+          overflow: 'auto',
+        }}
+      >
         {children}
       </Box>
     </Box>

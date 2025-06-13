@@ -29,8 +29,20 @@
     "registerButton": "Register",
     "haveAccount": "Already have an account?"
   },
-  "home": {
-    "workingOnCreation": "We are working on creating something amazing!"
+  "bots": {
+    "title": "Bots Management",
+    "name": "Bot Name",
+    "token": "Bot Token",
+    "isActive": "Active",
+    "createdAt": "Created At",
+    "actions": "Actions",
+    "addNew": "Add New Bot",
+    "editBot": "Edit Bot",
+    "edit": "Edit",
+    "delete": "Delete",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "confirmDelete": "Are you sure you want to delete this bot?"
   },
   "admin": {
     "title": "Admin Panel",
@@ -64,6 +76,9 @@
     "loginAlphanumeric": "Login must contain only letters and numbers",
     "nameLength": "Name must be between 1 and 50 characters",
     "companyLength": "Company name must not exceed 100 characters"
+  },
+  "home": {
+    "workingOnCreation": "We are working on creating something amazing!"
   },
   "dashboard": {
     "welcome": "Welcome to KoinSera",
