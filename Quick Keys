@@ -19,3 +19,9 @@ rm -rf dist node_modules/.vite
 npm run build
 
 docker compose build frontend-1 && docker compose up -d frontend-1 && docker compose build frontend-2 && docker compose up -d frontend-2
+
+docker-compose up -d bot-service
+
+
+
+new_chat_members	Array of User	Optional. New members that were added to the group or supergroup and information about them (the bot itself may be one of these members)

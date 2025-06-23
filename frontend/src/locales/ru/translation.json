@@ -48,26 +48,7 @@
     "workingOnCreation": "Мы работаем над созданием чего-то удивительного!"
   },
   "admin": {
-    "title": "Панель администратора",
-    "users": {
-      "title": "Пользователи",
-      "login": "Логин",
-      "email": "Email",
-      "firstName": "Имя",
-      "lastName": "Фамилия",
-      "company": "Компания",
-      "language": "Язык",
-      "isActive": "Активен",
-      "isAdmin": "Администратор",
-      "createdAt": "Дата создания",
-      "lastLogin": "Последний вход",
-      "actions": "Действия",
-      "changePassword": "Изменить пароль",
-      "makeAdmin": "Сделать администратором",
-      "removeAdmin": "Убрать права администратора",
-      "activate": "Активировать пользователя",
-      "deactivate": "Деактивировать пользователя"
-    }
+    "title": "Панель администратора"
   },
   "validation": {
     "passwordMatch": "Пароли не совпадают",
@@ -93,6 +74,35 @@
       "profile": "Профиль",
       "finance": "Финансы",
       "admin": "Администрирование"
+    },
+    "chats": {
+      "title": "Чаты",
+      "type": "Тип",
+      "status": "Статус",
+      "userNum": "Пользователи",
+      "unknownUser": "Неизвестные",
+      "createdAt": "Создано",
+      "updatedAt": "Обновлено",
+      "telegramChatId": "ID чата Telegram",
+      "addNew": "Добавить чат"
+    }
+  },
+  "users": {
+    "title": "Сотрудники",
+    "addNew": "Добавить сотрудника",
+    "fullName": "ФИО",
+    "telegramUsername": "Telegram Username",
+    "telegramUserId": "Telegram User ID",
+    "isActive": "Активен",
+    "isExternal": "Внешний",
+    "isBot": "Бот",
+    "createdAt": "Создан",
+    "updatedAt": "Обновлён",
+    "actions": "Действия",
+    "editUser": "Редактировать сотрудника",
+    "confirmDelete": "Вы уверены, что хотите удалить этого сотрудника?",
+    "validation": {
+      "fullNameRequired": "ФИО обязательно для заполнения"
     }
   }
 } 

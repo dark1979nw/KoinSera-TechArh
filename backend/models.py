@@ -3,6 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from security import get_password_hash, verify_password
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import BigInteger
 
 Base = declarative_base()
 
@@ -70,3 +72,44 @@ class Bot(Base):
     is_active = Column(Boolean, default=True)
 
     user = relationship("User", back_populates="bots")
+
+class Chat(Base):
+    __tablename__ = "chats"
+
+    chat_id = Column(Integer, primary_key=True, index=True)
+    bot_id = Column(Integer, ForeignKey('bots.bot_id'), nullable=False)
+    telegram_chat_id = Column(BigInteger, nullable=False, index=True)
+    type_id = Column(Integer, nullable=False)
+    status_id = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    title = Column(ARRAY(String(255)), nullable=True)
+    user_num = Column(Integer, default=0)
+    unknown_user = Column(Integer, default=0)
+    user_id = Column(Integer, ForeignKey('users.user_id'), nullable=True)
+
+    bot = relationship("Bot")
+    user = relationship("User")
+
+class ChatType(Base):
+    __tablename__ = "chat_types"
+    type_id = Column(Integer, primary_key=True, index=True)
+    type_name = Column(String(50), unique=True, nullable=False)
+
+class ChatStatus(Base):
+    __tablename__ = "chat_statuses"
+    status_id = Column(Integer, primary_key=True, index=True)
+    status_name = Column(String(50), unique=True, nullable=False)
+
+class Employee(Base):
+    __tablename__ = "employees"
+    employee_id = Column(BigInteger, primary_key=True, index=True)
+    full_name = Column(String(255), nullable=False)
+    telegram_username = Column(String(255))
+    telegram_user_id = Column(BigInteger)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    is_active = Column(Boolean, default=False)
+    is_external = Column(Boolean, default=True)
+    user_id = Column(Integer, ForeignKey('users.user_id'), nullable=True)
+    is_bot = Column(Boolean, default=False)

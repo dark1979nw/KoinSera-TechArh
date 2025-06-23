@@ -3,10 +3,12 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from '../components/dashboard/Dashboard';
 import Admin from './dashboard/Admin';
 import BotsPanel from '../components/dashboard/BotsPanel';
+import ChatsPanel from '../components/dashboard/ChatsPanel';
+import UsersPanel from '../components/dashboard/UsersPanel';
 
 // Placeholder components for each section
-const Chats = () => <div>Chats Page</div>;
-const Users = () => <div>Users Page</div>;
+const Chats = () => <ChatsPanel />;
+const Users = () => <UsersPanel />;
 const Profile = () => <div>Profile Page</div>;
 const Finance = () => <div>Finance Page</div>;
 
