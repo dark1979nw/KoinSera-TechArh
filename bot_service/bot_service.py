@@ -28,9 +28,9 @@ class BotService:
         """Initialize database connection pool"""
         try:
             self.pool = await asyncpg.create_pool(self.db_url)
-            logger.info("Database connection pool initialized")
+
         except Exception as e:
-            logger.error(f"Failed to initialize database connection: {e}")
+
             raise
 
     async def get_all_data(self):
@@ -56,7 +56,7 @@ class BotService:
 
     async def get_chat_members_count(self, bot_token, chat_id):
         """Get number of members in chat"""
-        logger.info(f"Getting chat members count for chat {chat_id}");
+
         try:
             url = f"https://api.telegram.org/bot{bot_token}/getChatMembersCount"
             params = {"chat_id": chat_id}
@@ -67,10 +67,8 @@ class BotService:
                         data = await response.json()
                         if data.get("ok"):
                             return data.get("result", 0)
-                    logger.error(f"Failed to get chat members count: {await response.text()}")
                     return 0
         except Exception as e:
-            logger.error(f"Error getting chat members count: {e}")
             return 0
 
     async def check_user_in_chat(self, bot_token, chat_id, user_id):
@@ -112,8 +110,8 @@ class BotService:
             logger.error(f"Error sending welcome message: {e}")
             return False
 
-    async def get_chat_administrators(self, bot_token, chat_id):
-        """Get list of chat administrators (including bots) via Telegram API"""
+    async def get_chat_administrators(self, bot_token, chat_id, db_chat_id=None, user_id=None, bot_id=None):
+        """Get list of chat administrators (including bots) via Telegram API. Если ошибка 403 — выставить type_id=5 только для нужного bot_id и user_id."""
         try:
             url = f"https://api.telegram.org/bot{bot_token}/getChatAdministrators"
             params = {"chat_id": chat_id}
@@ -123,10 +121,16 @@ class BotService:
                         data = await response.json()
                         if data.get("ok"):
                             return data.get("result", [])
-                    logger.error(f"Failed to get chat administrators: {await response.text()}")
-                    return []
+                    else:
+                        # Если ошибка 403 — выставить type_id=5 только для нужного bot_id и user_id
+                        if response.status == 403 and db_chat_id and user_id and bot_id:
+                            async with self.pool.acquire() as conn:
+                                await conn.execute(
+                                    "UPDATE chats SET type_id = 5 WHERE chat_id = $1 AND user_id = $2 AND bot_id = $3",
+                                    db_chat_id, user_id, bot_id
+                                )
+                        return []
         except Exception as e:
-            logger.error(f"Error getting chat administrators: {e}")
             return []
 
     async def add_chat_employee(self, chat_id, employee_id, is_active, user_id, is_admin=False):
@@ -139,7 +143,6 @@ class BotService:
                     SELECT 1 FROM chat_employees WHERE chat_id = $1 AND employee_id = $2 AND user_id = $3
                 """, chat_id, employee_id, user_id)
                 if chat_employee_exists:
-                    logger.info(f"Chat-employee relation already exists for employee {employee_id} in chat {chat_id}")
                     return
                 await conn.execute("""
                     INSERT INTO chat_employees 
@@ -167,11 +170,10 @@ class BotService:
                 db_title = chat['title']
             # Обновление title только если реально изменился
             if new_title and new_title != db_title:
-                logger.info(f"Updating chat title from {db_title} to {new_title}")
                 await self.update_chat_title(chat['chat_id'], [new_title], user_id)
 
             # Получить администраторов чата и добавить их в базу
-            admins = await self.get_chat_administrators(bot_token, chat_id)
+            admins = await self.get_chat_administrators(bot_token, chat_id, chat['chat_id'], user_id, chat['bot_id'])
             for admin in admins:
                 user = admin.get('user', {})
                 telegram_user_id = user.get('id')
@@ -207,12 +209,10 @@ class BotService:
                     # Check if user should be removed (inactive in either table)
                     if not employee['is_active'] or not ce['is_active']:
                         # Remove user from chat if inactive
-                        logger.info(f"Removing user {employee['full_name']} from chat {chat_id} because they are inactive  {employee['is_active']} {ce['is_active']}");
                         await self.remove_user_from_chat(ce['chat_id'], employee['employee_id'], user_id)
                     else:
                         # User is active in both tables
                         known_users += 1
-                        logger.info(f"User {employee['full_name']} is active in both tables");
                         # Обновлять связь только если реально есть изменения
                         await self.update_user_info(employee, ce['chat_id'], user_id, ce)
             # --- ДОБАВЛЕНО: Проверка сотрудников без связи в chat_employees ---
@@ -227,7 +227,6 @@ class BotService:
                 if telegram_user_id:
                     is_in_chat = await self.check_user_in_chat(bot_token, chat['telegram_chat_id'], telegram_user_id)
                     if is_in_chat:
-                        logger.info(f"Employee {employee['full_name']} found in chat {chat['chat_id']} by telegram_user_id, adding relation.")
                         await self.add_chat_employee(chat['chat_id'], employee['employee_id'], True, user_id)
                         # Обновить username, если изменился
                         # Получить актуальный username через getChatMember
@@ -239,14 +238,13 @@ class BotService:
                                 await self.update_user_info(employee, chat['chat_id'], user_id)
                 elif telegram_username:
                     # Получить админов чата
-                    admins = await self.get_chat_administrators(bot_token, chat['telegram_chat_id'])
+                    admins = await self.get_chat_administrators(bot_token, chat['telegram_chat_id'], chat['chat_id'], user_id, chat['bot_id'])
                     found = False
                     for admin in admins:
                         user = admin.get('user', {})
                         if user.get('username', '').lower() == telegram_username.lower():
                             # Нашли пользователя по username среди админов
                             employee['telegram_user_id'] = user.get('id')
-                            logger.info(f"Employee {employee['full_name']} found in chat {chat['chat_id']} by telegram_username (admin), updating telegram_user_id and adding relation.")
                             await self.add_chat_employee(chat['chat_id'], employee['employee_id'], True, user_id)
                             await self.update_user_info(employee, chat['chat_id'], user_id)
                             found = True
@@ -258,7 +256,6 @@ class BotService:
             total_users = known_users + chat_count
             unknown_users = chat_count
             # Check if we need to update the counts
-            logger.info(f"total_users={total_users} (was {chat['user_num']}), unknown_users={unknown_users} (was {chat['unknown_user']})");
             if total_users != chat['user_num'] or unknown_users != chat['unknown_user']:
                 await self.update_chat_counts(chat['chat_id'], total_users, unknown_users, user_id)
             # Process remaining users if any
@@ -285,7 +282,6 @@ class BotService:
         """Update chat user counts"""
         try:
             current_time = datetime.utcnow()
-            logger.info(f"Updating chat counts for chat {chat_id}  total_users={total_users} unknown_users={unknown_users}");
             async with self.pool.acquire() as conn:
                 await conn.execute("""
                     UPDATE chats 
@@ -333,12 +329,10 @@ class BotService:
 
     async def process_new_user(self, chat, user, employees, known_users, chat_count, user_id):
         """Process new user according to chat type with advanced matching logic"""
-        logger.info(f"Processing new user: {user}");
         try:
             telegram_user_id = user.get('id')
             full_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
             username = user.get('username', '')
-            logger.info(f"Processing new user: {telegram_user_id} {full_name} {username}");
             employee = None
             update_fields = {}
             # 1. Поиск по telegram_user_id
@@ -368,7 +362,6 @@ class BotService:
             # 3. Если найден сотрудник — обновить при необходимости
             if employee:
                 if update_fields:
-                    logger.info(f"Updating employee {employee['employee_id']} fields: {update_fields}")
                     async with self.pool.acquire() as conn:
                         # Формируем SET-часть и плейсхолдеры корректно
                         set_clause = ', '.join([f"{k} = ${i+2}" for i, k in enumerate(update_fields.keys())])
@@ -392,7 +385,6 @@ class BotService:
         """Add external user to database, only if not exists. Also add chat_employees relation only if not exists. Всегда is_bot = false."""
         try:
             current_time = datetime.utcnow()
-            logger.info(f"Adding external user {telegram_user_id} to chat {chat_id}");
             async with self.pool.acquire() as conn:
                 # Check if employee exists
                 existing_employee = await conn.fetchrow("""
@@ -406,7 +398,6 @@ class BotService:
                         SELECT 1 FROM chat_employees WHERE chat_id = $1 AND employee_id = $2 AND user_id = $3
                     """, chat_id, employee_id, user_id)
                     if chat_employee_exists:
-                        logger.info(f"Chat-employee relation already exists for employee {employee_id} in chat {chat_id}")
                         return
                     # Add chat_employee relationship
                     await conn.execute("""
@@ -417,7 +408,6 @@ class BotService:
                         SET is_active = EXCLUDED.is_active,
                             updated_at = EXCLUDED.updated_at
                     """, chat_id, employee_id, is_active, current_time, user_id)
-                    logger.info(f"Added existing employee {full_name} to chat {chat_id}")
                 else:
                     # Create new employee и всегда is_bot = false
                     employee = await conn.fetchrow("""
@@ -432,7 +422,6 @@ class BotService:
                         (chat_id, employee_id, is_active, created_at, updated_at, user_id)
                         VALUES ($1, $2, $3, $4, $4, $5)
                     """, chat_id, employee['employee_id'], is_active, current_time, user_id)
-                    logger.info(f"Created new external employee {full_name} and added to chat {chat_id}")
         except Exception as e:
             logger.error(f"Error adding external user: {e}")
 
@@ -449,7 +438,6 @@ class BotService:
 
     async def update_user_info(self, employee, chat_id, user_id, chat_employee_record=None):
         """Update user information in database only if changes detected (employee and chat_employees)"""
-        logger.info(f"Updating user info for {employee['employee_id']} in chat {chat_id}");
         try:
             current_time = datetime.utcnow()
             async with self.pool.acquire() as conn:
@@ -490,7 +478,6 @@ class BotService:
                         WHERE employee_id = $5 AND user_id = $6
                     """, employee['full_name'], employee['telegram_username'], 
                         employee['is_active'], current_time, employee['employee_id'], user_id)
-                    logger.info(f"Updated employee info for {employee['full_name']}")
                 if need_update_chat_employee:
                     await conn.execute("""
                         UPDATE chat_employees 
@@ -498,7 +485,6 @@ class BotService:
                             updated_at = $2
                         WHERE chat_id = $3 AND employee_id = $4 AND user_id = $5
                     """, True, current_time, chat_id, employee['employee_id'], user_id)
-                    logger.info(f"Updated chat_employee relationship for {employee['full_name']} in chat {chat_id}")
         except Exception as e:
             logger.error(f"Error updating user info: {e}")
 
@@ -547,9 +533,7 @@ class BotService:
     async def get_bot_chats(self, bot_token):
         """Get list of chats where bot is present"""
         try:
-            logger.info(f"Getting bot chats for bot {bot_token}");
             url = f"https://api.telegram.org/bot{bot_token}/getUpdates"
-            logger.info(f"Getting updates from {url}");
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
                     if response.status == 200:
@@ -561,20 +545,8 @@ class BotService:
                                 if "message" in update and "chat" in update["message"]:
                                     chat = update["message"]["chat"]
                                     chat_id = chat["id"]
-                                    logger.info(f"Found chat: {chat_id}");
                                     # Get chat info for all chats
-                                    chat_data = await self.get_chat_info(bot_token, chat_id)
-                                    logger.info(f"Chat data: {chat_data}");
-                                    if chat_data:
-                                        title = chat_data.get('title', '')
-                                        if not title and chat_data.get('type') == 'private':
-                                            # For private chats, use user's name
-                                            first_name = chat_data.get('first_name', '')
-                                            last_name = chat_data.get('last_name', '')
-                                            title = f"{first_name} {last_name}".strip()
-                                        
-                                        chat_info[chat_id] = title
-                                        logger.info(f"Found chat: {title} (ID: {chat_id})")
+                                    chat_info[chat_id] = chat.get('title', '')
                             
                             return chat_info
                     logger.error(f"Failed to get bot chats: {await response.text()}")
@@ -583,22 +555,31 @@ class BotService:
             logger.error(f"Error getting bot chats: {e}")
             return {}
 
-    async def get_chat_info(self, bot_token, chat_id):
-        """Get chat information from Telegram"""
+    async def get_chat_info(self, bot_token, chat_id, db_chat_id=None, user_id=None, bot_id=None):
+        """Get chat information from Telegram. Если ошибка 400 — выставить type_id=5 только для чата с нужным bot_id и user_id."""
         try:
             url = f"https://api.telegram.org/bot{bot_token}/getChat"
             params = {"chat_id": chat_id}
-            
+            logger.info(f"Getting chat info for chat {chat_id}");
+            logger.info(f"Getting chat info from {url}");
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, params=params) as response:
+                    logger.info(f"Response status: {response.status}");
                     if response.status == 200:
                         data = await response.json()
                         if data.get("ok"):
                             return data.get("result", {})
-                    logger.error(f"Failed to get chat info: {await response.text()}")
-                    return None
+                    else:
+                        # Если ошибка 400 — выставить type_id=5 только для нужного bot_id и user_id
+                        if response.status == 400 and db_chat_id and user_id and bot_id:
+                            async with self.pool.acquire() as conn:
+                                logger.info(f"Updating chat {db_chat_id} to type_id=5 (bot_id={bot_id})");
+                                await conn.execute(
+                                    "UPDATE chats SET type_id = 5 WHERE chat_id = $1 AND user_id = $2 AND bot_id = $3",
+                                    db_chat_id, user_id, bot_id
+                                )
+                        return None
         except Exception as e:
-            logger.error(f"Error getting chat info: {e}")
             return None
 
     async def get_active_user_ids(self):
@@ -620,19 +601,15 @@ class BotService:
                 employees = await conn.fetch("""
                     SELECT * FROM employees WHERE user_id = $1 and is_active = true
                 """, user_id)
-                logger.info(f"Found {len(employees)} employees for user_id {user_id}");
                 chat_employees = await conn.fetch("""
                     SELECT * FROM chat_employees WHERE user_id = $1 and is_active = true
                 """, user_id)
-                logger.info(f"Found {len(chat_employees)} chat_employees for user_id {user_id}");
                 bots = await conn.fetch("""
                     SELECT * FROM bots WHERE is_active = true AND user_id = $1 and is_active = true
                 """, user_id)
-                logger.info(f"Found {len(bots)} bots for user_id {user_id}");
                 chats = await conn.fetch("""
                     SELECT * FROM chats WHERE user_id = $1
                 """, user_id)
-                logger.info(f"Found {len(chats)} chats for user_id {user_id}");
                 return employees, chat_employees, bots, chats
         except Exception as e:
             logger.error(f"Failed to get data from database: {e}")
@@ -673,38 +650,70 @@ class BotService:
             logger.warning(f"Error checking access to chat {chat_id}: {e}")
             return False
 
+    async def get_chat_member_info(self, bot_token, chat_id, user_id):
+        """Get chat member info from Telegram API (заглушка для совместимости)"""
+        try:
+            url = f"https://api.telegram.org/bot{bot_token}/getChatMember"
+            params = {"chat_id": chat_id, "user_id": user_id}
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data.get("ok"):
+                            return data.get("result", {})
+            return None
+        except Exception as e:
+            return None
+
     async def run_cycle(self):
         """Run one cycle of the service"""
-        logger.info("Starting service cycle");
         try:
             # Получить всех активных пользователей
             active_user_ids = await self.get_active_user_ids()
-            logger.info(f"Found {len(active_user_ids)} active users");
             for user_id in active_user_ids:
-                logger.info(f"Processing user_id {user_id}");
                 # Get all required data for this user
                 employees, chat_employees, bots, chats = await self.get_all_data(user_id)
                 for bot in bots:
-                    logger.info(f"Processing bot {bot['bot_name']} for user_id {user_id}");
                     # Получить чаты с обновлений
                     bot_chats = await self.get_bot_chats(bot['bot_token'])  # dict {chat_id: title}
-                    logger.info(f"Found {len(bot_chats)} chats for bot {bot['bot_name']}");
                     # Собрать все уникальные chat_id
                     db_chat_ids = { (c['telegram_chat_id'], c['bot_id']) for c in chats }
                     bot_chat_ids = { (chat_id, bot['bot_id']) for chat_id in bot_chats.keys() }
                     all_chat_keys = db_chat_ids | bot_chat_ids
+                    # Фильтруем только чаты с bot_id текущего бота
+                    relevant_chats = [c for c in chats if c['bot_id'] == bot['bot_id']]
                     for chat_id, bot_id in all_chat_keys:
+                        if bot_id != bot['bot_id']:
+                            continue
                         chat_title = bot_chats.get(chat_id)
                         # Поиск чата по паре (bot_id, telegram_chat_id)
-                        existing_chat = next((c for c in chats if c['telegram_chat_id'] == chat_id and c['bot_id'] == bot_id), None)
+                        existing_chat = next((c for c in relevant_chats if c['telegram_chat_id'] == chat_id and c['bot_id'] == bot_id), None)
+                        # Проверяем только is_active==True или is_active is None
+                        if existing_chat and existing_chat.get('is_active') is not None and not existing_chat['is_active']:
+                            continue
+                        # Если чат type_id==5 — пробуем оживить
+                        if existing_chat and existing_chat.get('type_id') == 5:
+                            accessible = await self.is_chat_accessible_for_bot(bot['bot_token'], chat_id)
+                            if accessible:
+                                # Вернуть type_id=4
+                                async with self.pool.acquire() as conn:
+                                    await conn.execute(
+                                        "UPDATE chats SET type_id = 4 WHERE chat_id = $1 AND user_id = $2 AND bot_id = $3",
+                                        existing_chat['chat_id'], user_id, bot['bot_id']
+                                    )
+                                # Обработать как новый чат
+                                await self.process_existing_chat(existing_chat, bot['bot_token'], employees, chat_employees, user_id, chat_title)
+                            continue
                         # Проверяем доступность чата для бота через Telegram API ДО любых действий
                         accessible = await self.is_chat_accessible_for_bot(bot['bot_token'], chat_id)
                         if not accessible:
-                            logger.warning(f"Bot {bot['bot_name']} cannot access chat {chat_id}, marking as removed.")
-                            if existing_chat:
-                                await self.mark_chat_as_removed(existing_chat['chat_id'], user_id)
-                            else:
-                                await self.create_removed_chat(bot_id, chat_id, chat_title, user_id)
+                            # Установить только type_id=5
+                            if existing_chat and existing_chat.get('type_id') != 5:
+                                async with self.pool.acquire() as conn:
+                                    await conn.execute(
+                                        "UPDATE chats SET type_id = 5 WHERE chat_id = $1 AND user_id = $2 AND bot_id = $3",
+                                        existing_chat['chat_id'], user_id, bot['bot_id']
+                                    )
                             continue  # Не обрабатываем дальше этот чат
                         if existing_chat:
                             await self.process_existing_chat(existing_chat, bot['bot_token'], employees, chat_employees, user_id, chat_title)

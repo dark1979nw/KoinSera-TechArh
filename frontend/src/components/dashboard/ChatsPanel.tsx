@@ -157,6 +157,13 @@ export default function ChatsPanel() {
         Array.isArray(params.row.title) ? params.row.title[0] : params.row.title || '',
     },
     {
+      field: 'bot_name',
+      headerName: t('dashboard.chats.bot'),
+      width: 160,
+      sortable: true,
+      filterable: true,
+    },
+    {
       field: 'type_id',
       headerName: t('dashboard.chats.type'),
       width: 120,

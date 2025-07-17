@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import joinedload
 from typing import List
 from database import get_db
 from models import Chat, User
@@ -16,7 +17,24 @@ async def get_chats(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    return db.query(Chat).filter(Chat.user_id == current_user.user_id).all()
+    chats = db.query(Chat).options(joinedload(Chat.bot)).filter(Chat.user_id == current_user.user_id).all()
+    result = []
+    for chat in chats:
+        result.append(ChatResponse(
+            chat_id=chat.chat_id,
+            bot_id=chat.bot_id,
+            bot_name=chat.bot.bot_name if chat.bot else None,
+            user_id=chat.user_id,
+            telegram_chat_id=chat.telegram_chat_id,
+            title=chat.title,
+            type_id=chat.type_id,
+            status_id=chat.status_id,
+            user_num=chat.user_num,
+            unknown_user=chat.unknown_user,
+            created_at=chat.created_at,
+            updated_at=chat.updated_at,
+        ))
+    return result
 
 @router.post("/", response_model=ChatResponse)
 async def create_chat(

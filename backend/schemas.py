@@ -43,6 +43,7 @@ class BotResponse(BotBase):
 class ChatResponse(BaseModel):
     chat_id: int
     bot_id: int
+    bot_name: Optional[str] = None
     user_id: Optional[int] = None
     telegram_chat_id: int
     title: Optional[List[str]] = None
