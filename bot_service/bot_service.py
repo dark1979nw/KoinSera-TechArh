@@ -21,6 +21,7 @@ class BotService:
     def __init__(self):
         self.db_url = os.getenv('DATABASE_URL', '')
         self.interval = int(os.getenv('SERVICE_INTERVAL', '30'))
+        self.updates_lookback_hours = int(os.getenv('UPDATES_LOOKBACK_HOURS', '24'))  # Новый параметр
         self.pool = None
 
     async def init_db(self):
@@ -214,6 +215,45 @@ class BotService:
                         logger.info(f"User {employee['full_name']} is active in both tables");
                         # Обновлять связь только если реально есть изменения
                         await self.update_user_info(employee, ce['chat_id'], user_id, ce)
+            # --- ДОБАВЛЕНО: Проверка сотрудников без связи в chat_employees ---
+            employee_ids_in_chat_employees = {ce['employee_id'] for ce in chat_employees if ce['chat_id'] == chat['chat_id']}
+            for employee in employees:
+                if employee['employee_id'] in employee_ids_in_chat_employees:
+                    continue
+
+                telegram_user_id = employee.get('telegram_user_id')
+                telegram_username = employee.get('telegram_username')
+
+                if telegram_user_id:
+                    is_in_chat = await self.check_user_in_chat(bot_token, chat['telegram_chat_id'], telegram_user_id)
+                    if is_in_chat:
+                        logger.info(f"Employee {employee['full_name']} found in chat {chat['chat_id']} by telegram_user_id, adding relation.")
+                        await self.add_chat_employee(chat['chat_id'], employee['employee_id'], True, user_id)
+                        # Обновить username, если изменился
+                        # Получить актуальный username через getChatMember
+                        member_info = await self.get_chat_member_info(bot_token, chat['telegram_chat_id'], telegram_user_id)
+                        if member_info:
+                            new_username = member_info.get('user', {}).get('username')
+                            if new_username and new_username != telegram_username:
+                                employee['telegram_username'] = new_username
+                                await self.update_user_info(employee, chat['chat_id'], user_id)
+                elif telegram_username:
+                    # Получить админов чата
+                    admins = await self.get_chat_administrators(bot_token, chat['telegram_chat_id'])
+                    found = False
+                    for admin in admins:
+                        user = admin.get('user', {})
+                        if user.get('username', '').lower() == telegram_username.lower():
+                            # Нашли пользователя по username среди админов
+                            employee['telegram_user_id'] = user.get('id')
+                            logger.info(f"Employee {employee['full_name']} found in chat {chat['chat_id']} by telegram_username (admin), updating telegram_user_id and adding relation.")
+                            await self.add_chat_employee(chat['chat_id'], employee['employee_id'], True, user_id)
+                            await self.update_user_info(employee, chat['chat_id'], user_id)
+                            found = True
+                            break
+            
+                else:
+                    logger.warning(f"Employee {employee['employee_id']} ({employee.get('full_name', '')}) has neither telegram_user_id nor telegram_username, skipping.")
             # Calculate total users and unknown users
             total_users = known_users + chat_count
             unknown_users = chat_count
@@ -260,7 +300,10 @@ class BotService:
     async def process_new_chat_members(self, chat, bot_token, chat_count, known_users, employees, user_id):
         """Process new chat members"""
         try:
+            from datetime import datetime, timedelta
             url = f"https://api.telegram.org/bot{bot_token}/getUpdates"
+            now = datetime.utcnow()
+            lookback = now - timedelta(hours=self.updates_lookback_hours)
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
                     if response.status == 200:
@@ -268,43 +311,80 @@ class BotService:
                         if data.get("ok"):
                             updates = data.get("result", [])
                             for update in updates:
-                                if "message" in update and "chat" in update["message"]:
-                                    user = update["message"]["from"]
-                                    await self.process_new_user(chat, user, employees, known_users, chat_count, user_id)
+                                msg = update.get("message")
+                                if msg and "chat" in msg:
+                                    msg_date = datetime.utcfromtimestamp(msg["date"])
+                                    if msg_date >= lookback:
+                                        # 1. Обычный отправитель
+                                        if "from" in msg:
+                                            await self.process_new_user(chat, msg["from"], employees, known_users, chat_count, user_id)
+                                        # 2. new_chat_participant (устаревшее, но поддержим)
+                                        if "new_chat_participant" in msg:
+                                            await self.process_new_user(chat, msg["new_chat_participant"], employees, known_users, chat_count, user_id)
+                                        # 3. new_chat_member (один пользователь)
+                                        if "new_chat_member" in msg:
+                                            await self.process_new_user(chat, msg["new_chat_member"], employees, known_users, chat_count, user_id)
+                                        # 4. new_chat_members (список пользователей)
+                                        if "new_chat_members" in msg:
+                                            for member in msg["new_chat_members"]:
+                                                await self.process_new_user(chat, member, employees, known_users, chat_count, user_id)
         except Exception as e:
             logger.error(f"Error processing new chat members: {e}")
 
     async def process_new_user(self, chat, user, employees, known_users, chat_count, user_id):
-        """Process new user according to chat type"""
+        """Process new user according to chat type with advanced matching logic"""
+        logger.info(f"Processing new user: {user}");
         try:
             telegram_user_id = user.get('id')
             full_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
             username = user.get('username', '')
-            
-            existing_employee = next((e for e in employees if e['telegram_user_id'] == telegram_user_id), None)
-            
-            if chat['type_id'] == 2:  # Private chat
-                if not existing_employee or existing_employee['is_external'] or not existing_employee['is_active']:
-                    # Add as external user and remove from chat
-                    await self.add_external_user(telegram_user_id, full_name, username, chat['chat_id'], False, user_id)
-                    chat_count -= 1
-                else:
-                    # Add active user
-                    await self.add_chat_employee(chat['chat_id'], existing_employee['employee_id'], True, user_id)
-                    known_users += 1
-                    chat_count -= 1
-            else:  # Group chats (type_id 1,3,4)
-                if not existing_employee or existing_employee['is_external'] or not existing_employee['is_active']:
-                    # Add as external user but keep in chat
-                    await self.add_external_user(telegram_user_id, full_name, username, chat['chat_id'], True, user_id)
-                    known_users += 1
-                    chat_count -= 1
-                else:
-                    # Add active user
-                    await self.add_chat_employee(chat['chat_id'], existing_employee['employee_id'], True, user_id)
-                    known_users += 1
-                    chat_count -= 1
-                    
+            logger.info(f"Processing new user: {telegram_user_id} {full_name} {username}");
+            employee = None
+            update_fields = {}
+            # 1. Поиск по telegram_user_id
+            if telegram_user_id:
+                employee = next((e for e in employees if e.get('telegram_user_id') == telegram_user_id), None)
+                if employee:
+                    # Обновить username/full_name если изменились
+                    if employee.get('telegram_username') != username:
+                        update_fields['telegram_username'] = username
+                    if employee.get('full_name') != full_name:
+                        update_fields['full_name'] = full_name
+                    if not employee.get('is_active', True):
+                        update_fields['is_active'] = True
+            # 2. Если не найдено — поиск по username
+            if not employee and username:
+                employee = next((e for e in employees if e.get('telegram_username') and e.get('telegram_username').lower() == username.lower()), None)
+                if employee:
+                    # a) Если user_id отсутствует — обновить
+                    if not employee.get('telegram_user_id'):
+                        update_fields['telegram_user_id'] = telegram_user_id
+                        update_fields['full_name'] = full_name
+                        update_fields['is_active'] = True
+                    # b) Если user_id есть — обновить и деактивировать
+                    else:
+                        update_fields['full_name'] = full_name
+                        update_fields['is_active'] = False
+            # 3. Если найден сотрудник — обновить при необходимости
+            if employee:
+                if update_fields:
+                    logger.info(f"Updating employee {employee['employee_id']} fields: {update_fields}")
+                    async with self.pool.acquire() as conn:
+                        # Формируем SET-часть и плейсхолдеры корректно
+                        set_clause = ', '.join([f"{k} = ${i+2}" for i, k in enumerate(update_fields.keys())])
+                        set_clause += f", updated_at = ${len(update_fields)+2}"
+                        values = list(update_fields.values())
+                        # employee_id = $1, далее значения update_fields, updated_at, user_id
+                        await conn.execute(
+                            f"UPDATE employees SET {set_clause} WHERE employee_id = $1 AND user_id = ${len(update_fields)+3}",
+                            employee['employee_id'], *values, datetime.utcnow(), user_id
+                        )
+                    # Обновить локально (удалено, asyncpg.Record не поддерживает item assignment)
+                # Использовать найденного сотрудника
+                await self.add_chat_employee(chat['chat_id'], employee['employee_id'], True, user_id)
+                return
+            # 4. Если не найдено ничего — создать нового
+            await self.add_external_user(telegram_user_id, full_name, username, chat['chat_id'], True, user_id)
         except Exception as e:
             logger.error(f"Error processing new user: {e}")
 
@@ -467,7 +547,9 @@ class BotService:
     async def get_bot_chats(self, bot_token):
         """Get list of chats where bot is present"""
         try:
+            logger.info(f"Getting bot chats for bot {bot_token}");
             url = f"https://api.telegram.org/bot{bot_token}/getUpdates"
+            logger.info(f"Getting updates from {url}");
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
                     if response.status == 200:
@@ -479,9 +561,10 @@ class BotService:
                                 if "message" in update and "chat" in update["message"]:
                                     chat = update["message"]["chat"]
                                     chat_id = chat["id"]
-                                    
+                                    logger.info(f"Found chat: {chat_id}");
                                     # Get chat info for all chats
                                     chat_data = await self.get_chat_info(bot_token, chat_id)
+                                    logger.info(f"Chat data: {chat_data}");
                                     if chat_data:
                                         title = chat_data.get('title', '')
                                         if not title and chat_data.get('type') == 'private':
@@ -637,6 +720,8 @@ class BotService:
         while True:
             await self.run_cycle()
             await asyncio.sleep(self.interval)
+
+ 
 
 async def main():
     service = BotService()

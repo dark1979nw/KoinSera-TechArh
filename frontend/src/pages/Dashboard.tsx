@@ -5,11 +5,11 @@ import Admin from './dashboard/Admin';
 import BotsPanel from '../components/dashboard/BotsPanel';
 import ChatsPanel from '../components/dashboard/ChatsPanel';
 import UsersPanel from '../components/dashboard/UsersPanel';
+import Profile from './Profile';
 
 // Placeholder components for each section
 const Chats = () => <ChatsPanel />;
 const Users = () => <UsersPanel />;
-const Profile = () => <div>Profile Page</div>;
 const Finance = () => <div>Finance Page</div>;
 
 export default function Dashboard() {

@@ -5,6 +5,7 @@ from database import get_db
 from models import Employee, User
 from routers.auth import get_current_user
 from schemas import EmployeeResponse, EmployeeCreate, EmployeeUpdate
+from fastapi import HTTPException
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -49,4 +50,17 @@ async def update_employee(
         setattr(db_employee, field, value)
     db.commit()
     db.refresh(db_employee)
-    return db_employee 
+    return db_employee
+
+@router.delete("/{employee_id}")
+async def delete_employee(
+    employee_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db_employee = db.query(Employee).filter(Employee.employee_id == employee_id, Employee.user_id == current_user.user_id).first()
+    if not db_employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    db.delete(db_employee)
+    db.commit()
+    return {"detail": "Employee deleted"} 
