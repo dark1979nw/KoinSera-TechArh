@@ -21,6 +21,7 @@ import {
   GridToolbar,
 } from '@mui/x-data-grid';
 import { api } from '../../contexts/AuthContext';
+import { Delete } from '@mui/icons-material';
 
 interface Chat {
   chat_id: number;
@@ -52,6 +53,8 @@ export default function ChatsPanel() {
     status_id: '',
   });
   const [saving, setSaving] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
 
   const fetchBots = async () => {
     try {
@@ -133,6 +136,15 @@ export default function ChatsPanel() {
       await fetchChats();
     } catch (error) {
       console.error('Error updating chat:', error);
+    }
+  };
+
+  const handleDeleteChat = async (chat_id: number) => {
+    try {
+      await api.delete(`/api/chats/${chat_id}`);
+      await fetchChats();
+    } catch (error) {
+      console.error('Error deleting chat:', error);
     }
   };
 
@@ -231,6 +243,26 @@ export default function ChatsPanel() {
         }
       }
     },
+    {
+      field: 'actions',
+      headerName: t('dashboard.chats.actions') || 'Actions',
+      width: 120,
+      renderCell: (params: any) => (
+        <Button
+          size="small"
+          color="error"
+          onClick={() => {
+            setChatToDelete(params.row);
+            setDeleteDialogOpen(true);
+          }}
+        >
+          <Delete fontSize="small" />
+        </Button>
+      ),
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+    },
   ];
 
   return (
@@ -328,6 +360,27 @@ export default function ChatsPanel() {
           <Button onClick={() => setOpenDialog(false)}>{t('common.cancel') || 'Cancel'}</Button>
           <Button onClick={handleCreateChat} color="primary" disabled={saving}>
             {t('common.save') || 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>{t('dashboard.chats.confirmDeleteTitle') || 'Удалить чат?'}</DialogTitle>
+        <DialogContent>
+          {t('dashboard.chats.confirmDeleteText') || 'Вы уверены, что хотите удалить этот чат?'}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>{t('common.cancel') || 'Отмена'}</Button>
+          <Button
+            onClick={async () => {
+              if (chatToDelete) {
+                await handleDeleteChat(chatToDelete.chat_id);
+                setDeleteDialogOpen(false);
+                setChatToDelete(null);
+              }
+            }}
+            color="error"
+          >
+            {t('common.delete') || 'Удалить'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -6,7 +6,8 @@
     "loading": "Загрузка...",
     "error": "Произошла ошибка",
     "cancel": "Отмена",
-    "save": "Сохранить"
+    "save": "Сохранить",
+    "delete": "Удалить"
   },
   "auth": {
     "loginError": "Неверный логин или пароль",
@@ -84,7 +85,10 @@
       "createdAt": "Создано",
       "updatedAt": "Обновлено",
       "telegramChatId": "ID чата Telegram",
-      "addNew": "Добавить чат"
+      "addNew": "Добавить чат",
+      "actions": "Действия",
+      "confirmDeleteTitle": "Удалить чат?",
+      "confirmDeleteText": "Вы уверены, что хотите удалить этот чат?"
     }
   },
   "users": {

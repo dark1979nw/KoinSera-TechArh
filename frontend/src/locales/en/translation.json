@@ -6,7 +6,8 @@
     "loading": "Loading...",
     "error": "An error occurred",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "delete": "Delete"
   },
   "auth": {
     "accountInactive": "Account is inactive. Please contact administrator",
@@ -102,7 +103,10 @@
       "createdAt": "Created At",
       "updatedAt": "Updated At",
       "telegramChatId": "Telegram Chat ID",
-      "addNew": "Add New Chat"
+      "addNew": "Add New Chat",
+      "actions": "Actions",
+      "confirmDeleteTitle": "Delete chat?",
+      "confirmDeleteText": "Are you sure you want to delete this chat?"
     }
   }
 }
