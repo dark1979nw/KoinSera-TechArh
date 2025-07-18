@@ -409,7 +409,88 @@ class BotService:
                 chat_type = chat.get('type_id')
                 if chat_type == 1:
                     logger.info(f"[TYPE 1] Внешний чат обработка chat_id={chat_id}")
-                    # TODO: обработка внешнего чата
+                    chat_links = [l for l in self.chat_employees if l['chat_id'] == chat_id]
+                    to_remove = []
+                    for link in chat_links:
+                        employee = next((e for e in self.employees if e['employee_id'] == link['employee_id']), None)
+                        if not employee:
+                            continue
+                        # Пропускаем самого бота
+                        if employee.get('telegram_user_id') == bot['telegram_user_id']:
+                            continue
+                        if (
+                            not link.get('is_active') or
+                            not employee.get('is_active')
+                        ):
+                            to_remove.append((employee, link))
+                    for employee, link in to_remove:
+                        logger.info(f"[TYPE 1] Кикаем пользователя: chat_id={chat_id}, employee_id={employee['employee_id']}, telegram_user_id={employee['telegram_user_id']}")
+                        kick_url = f"https://api.telegram.org/bot{bot_token}/kickChatMember"
+                        kick_params = {"chat_id": telegram_chat_id, "user_id": employee['telegram_user_id']}
+                        kicked = False
+                        try:
+                            async with aiohttp.ClientSession() as session:
+                                async with session.post(kick_url, params=kick_params) as kick_response:
+                                    kick_data = await kick_response.json()
+                                    if kick_response.status == 200 and kick_data.get("ok"):
+                                        logger.info(f"Пользователь {employee['telegram_user_id']} успешно удалён из чата {telegram_chat_id}")
+                                        kicked = True
+                                    elif (
+                                        kick_response.status == 400 and (
+                                            "not found" in (kick_data.get("description", "")).lower() or
+                                            "user_not_participant" in (kick_data.get("description", "")).lower()
+                                        )
+                                    ):
+                                        logger.info(f"Пользователь {employee['telegram_user_id']} не найден в чате {telegram_chat_id}, считаем удалённым")
+                                        kicked = True
+                                    else:
+                                        logger.error(f"Не удалось удалить пользователя {employee['telegram_user_id']} из чата {telegram_chat_id}: {kick_data}")
+                        except Exception as e:
+                            logger.error(f"Ошибка при удалении пользователя {employee['telegram_user_id']} из чата {telegram_chat_id}: {e}")
+                        if kicked:
+                            logger.info(f"[TYPE 1] Удаляем связь: chat_id={chat_id}, employee_id={employee['employee_id']}, telegram_user_id={employee['telegram_user_id']}")
+                            async with self.pool.acquire() as conn:
+                                await conn.execute(
+                                    """DELETE FROM chat_employees WHERE chat_id = $1 AND employee_id = $2 AND user_id = $3""",
+                                    chat_id, employee['employee_id'], link['user_id']
+                                )
+                            self.chat_employees = [l for l in self.chat_employees if not (l['chat_id'] == chat_id and l['employee_id'] == employee['employee_id'] and l['user_id'] == link['user_id'])]
+                            send_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                            user_name = employee.get('full_name') or employee.get('telegram_username') or str(employee['employee_id'])
+                            text = f"Пользователь {user_name} был удален из чата (ботом)"
+                            send_params = {"chat_id": telegram_chat_id, "text": text}
+                            try:
+                                async with aiohttp.ClientSession() as session:
+                                    await session.post(send_url, params=send_params)
+                            except Exception as e:
+                                logger.error(f"Ошибка при отправке сообщения в чат {telegram_chat_id}: {e}")
+                    # После обработки всех удалений — получить из API число участников чата и сравнить с числом активных связей
+                    url_count = f"https://api.telegram.org/bot{bot_token}/getChatMembersCount"
+                    params_count = {"chat_id": telegram_chat_id}
+                    try:
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(url_count, params=params_count) as response_count:
+                                if response_count.status == 200:
+                                    data_count = await response_count.json()
+                                    if data_count.get("ok"):
+                                        chat_members_count = data_count.get("result", 0)
+                                        active_links = [l for l in self.chat_employees if l['chat_id'] == chat_id and l.get('is_active')]
+                                        db_count = len(active_links)
+                                        unknown_count = chat_members_count - db_count
+                                        logger.info(f"[TYPE 1] chat_id={chat_id}: members_count={chat_members_count}, db_count={db_count}, unknown_count={unknown_count}")
+                                        if chat.get('user_num') != chat_members_count or chat.get('unknown_user') != unknown_count:
+                                            logger.info(f"[TYPE 1] chat_id={chat_id}: updating user_num={chat_members_count}, unknown_user={unknown_count}")
+                                            async with self.pool.acquire() as conn:
+                                                await conn.execute(
+                                                    """UPDATE chats SET user_num = $1, unknown_user = $2, updated_at = NOW() WHERE chat_id = $3""",
+                                                    chat_members_count, unknown_count, chat_id
+                                                )
+                                    else:
+                                        logger.warning(f"[TYPE 1] chat_id={chat_id}: getChatMembersCount failed: {data_count}")
+                                else:
+                                    logger.warning(f"[TYPE 1] chat_id={chat_id}: getChatMembersCount HTTP {response_count.status}")
+                    except Exception as e:
+                        logger.error(f"[TYPE 1] chat_id={chat_id}: error in getChatMembersCount: {e}")
                 elif chat_type == 2:
                     logger.info(f"[TYPE 2] Внутренний чат обработка chat_id={chat_id}")
                     chat_links = [l for l in self.chat_employees if l['chat_id'] == chat_id]
