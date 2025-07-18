@@ -78,18 +78,6 @@ export default function Participants() {
       ),
     },
     {
-      field: 'is_admin',
-      headerName: 'Admin',
-      width: 100,
-      renderCell: (params) => (
-        <Switch
-          checked={!!params.value}
-          onChange={e => handleSwitch(params.row.employee_id, 'is_admin', e.target.checked)}
-          color="primary"
-        />
-      ),
-    },
-    {
       field: 'ce_is_active',
       headerName: 'Link Active',
       width: 120,
