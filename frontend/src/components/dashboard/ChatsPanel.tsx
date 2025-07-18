@@ -22,6 +22,8 @@ import {
 } from '@mui/x-data-grid';
 import { api } from '../../contexts/AuthContext';
 import { Delete } from '@mui/icons-material';
+import './ChatsPanel.css';
+import { useNavigate } from 'react-router-dom';
 
 interface Chat {
   chat_id: number;
@@ -55,6 +57,7 @@ export default function ChatsPanel() {
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
+  const navigate = useNavigate();
 
   const fetchBots = async () => {
     try {
@@ -158,6 +161,15 @@ export default function ChatsPanel() {
     (c) => typeof c.type_id !== 'undefined' && typeof c.status_id !== 'undefined'
   );
 
+  // Цветовая разметка строк по типу
+  const getRowClassName = (params: any) => {
+    // Найти название типа по type_id
+    const typeName = chatTypes[params.row.type_id];
+    if (typeName === 'new_chat' || typeName === 'New Chat') return 'chat-row-new';
+    if (typeName === 'deleted from chat' || typeName === 'Deleted from chat' || typeName === 'blocked chat' || typeName === 'Blocked chat' || typeName === 'blocked' || typeName === 'Blocked') return 'chat-row-deleted';
+    return '';
+  };
+
   const columns: GridColDef[] = [
     { field: 'chat_id', headerName: 'ID', width: 70 },
     { field: 'telegram_chat_id', headerName: t('dashboard.chats.telegramChatId'), width: 180 },
@@ -246,18 +258,27 @@ export default function ChatsPanel() {
     {
       field: 'actions',
       headerName: t('dashboard.chats.actions') || 'Actions',
-      width: 120,
+      width: 180,
       renderCell: (params: any) => (
-        <Button
-          size="small"
-          color="error"
-          onClick={() => {
-            setChatToDelete(params.row);
-            setDeleteDialogOpen(true);
-          }}
-        >
-          <Delete fontSize="small" />
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => navigate(`/dashboard/participants/${params.row.chat_id}`)}
+          >
+            Участники
+          </Button>
+          <Button
+            size="small"
+            color="error"
+            onClick={() => {
+              setChatToDelete(params.row);
+              setDeleteDialogOpen(true);
+            }}
+          >
+            <Delete fontSize="small" />
+          </Button>
+        </Box>
       ),
       sortable: false,
       filterable: false,
@@ -280,6 +301,7 @@ export default function ChatsPanel() {
           rows={filteredChats}
           columns={columns}
           getRowId={(row) => row.chat_id}
+          getRowClassName={getRowClassName}
           initialState={{
             pagination: {
               paginationModel: { page: 0, pageSize: 10 },

@@ -6,6 +6,7 @@ import BotsPanel from '../components/dashboard/BotsPanel';
 import ChatsPanel from '../components/dashboard/ChatsPanel';
 import UsersPanel from '../components/dashboard/UsersPanel';
 import Profile from './Profile';
+import Participants from './dashboard/Participants';
 
 // Placeholder components for each section
 const Chats = () => <ChatsPanel />;
@@ -25,6 +26,7 @@ export default function Dashboard() {
         <Route path="profile" element={<Profile />} />
         <Route path="finance" element={<Finance />} />
         <Route path="admin" element={<Admin />} />
+        <Route path="participants/:chatId" element={<Participants />} />
       </Routes>
     </DashboardLayout>
   );

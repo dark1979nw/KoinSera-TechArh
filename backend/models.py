@@ -113,3 +113,17 @@ class Employee(Base):
     is_external = Column(Boolean, default=True)
     user_id = Column(Integer, ForeignKey('users.user_id'), nullable=True)
     is_bot = Column(Boolean, default=False)
+
+class ChatEmployee(Base):
+    __tablename__ = "chat_employees"
+    chat_id = Column(BigInteger, ForeignKey('chats.chat_id'), primary_key=True)
+    employee_id = Column(BigInteger, ForeignKey('employees.employee_id'), primary_key=True)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    is_admin = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    user_id = Column(Integer, nullable=True)
+
+    # Relationships (optional, for easier joins)
+    employee = relationship("Employee")
+    chat = relationship("Chat")
