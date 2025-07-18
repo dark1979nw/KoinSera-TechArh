@@ -360,6 +360,94 @@ class BotService:
             bot_token = bot['bot_token']
             bot_id = bot['bot_id']
             user_id = bot['user_id']
+            # Проверка чатов бота
+            for chat in self.chats:
+                if chat['bot_id'] != bot_id or chat['user_id'] != user_id:
+                    continue
+                if chat.get('status_id') == 3:
+                    continue  # Исключаем чаты со статусом 3
+                telegram_chat_id = chat['telegram_chat_id']
+                chat_id = chat['chat_id']
+                url = f"https://api.telegram.org/bot{bot_token}/getChatAdministrators"
+                params = {"chat_id": telegram_chat_id}
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(url, params=params) as response:
+                            if response.status == 200:
+                                data = await response.json()
+                                if data.get("ok"):
+                                    admins = data.get("result", [])
+                                    bot_is_admin = any(a.get("user", {}).get("id") == bot['telegram_user_id'] for a in admins)
+                                    if not bot_is_admin:
+                                        logger.info(f"Bot {bot_id} is not admin in chat {telegram_chat_id}, setting status=2")
+                                        async with self.pool.acquire() as conn:
+                                            await conn.execute("""
+                                                UPDATE chats SET status_id = 2, updated_at = NOW() WHERE chat_id = $1
+                                            """, chat_id)
+                                    else:
+                                        logger.info(f"Bot {bot_id} is admin in chat {telegram_chat_id}")
+                                        # Если статус не 1, то обновить на 1
+                                        if chat.get('status_id') != 1:
+                                            logger.info(f"Bot {bot_id} is admin in chat {telegram_chat_id}, updating status to 1")
+                                            async with self.pool.acquire() as conn:
+                                                await conn.execute("""
+                                                    UPDATE chats SET status_id = 1, updated_at = NOW() WHERE chat_id = $1
+                                                """, chat_id)
+                                else:
+                                    logger.warning(f"Bot {bot_id} getChatAdministrators failed for chat {telegram_chat_id}: {data}")
+                            elif response.status in (400, 403):
+                                logger.warning(f"Bot {bot_id} lost access to chat {telegram_chat_id} (status {response.status}), setting type=5, status=3")
+                                async with self.pool.acquire() as conn:
+                                    await conn.execute("""
+                                        UPDATE chats SET type_id = 5, status_id = 3, updated_at = NOW() WHERE chat_id = $1
+                                    """, chat_id)
+                            else:
+                                logger.warning(f"Bot {bot_id} unexpected response {response.status} for chat {telegram_chat_id}")
+                except Exception as e:
+                    logger.error(f"Bot {bot_id} error checking chat {telegram_chat_id}: {e}")
+                # Обработка по типу чата
+                chat_type = chat.get('type_id')
+                if chat_type == 1:
+                    logger.info(f"[TYPE 1] Внешний чат обработка chat_id={chat_id}")
+                    # TODO: обработка внешнего чата
+                elif chat_type == 2:
+                    logger.info(f"[TYPE 2] Внутренний чат обработка chat_id={chat_id}")
+                    # TODO: обработка внутреннего чата
+                elif chat_type in (3, 4):
+                    logger.info(f"[TYPE 3/4] Чтение/новый чат обработка chat_id={chat_id}")
+                    # Получаем число участников через Telegram API
+                    url_count = f"https://api.telegram.org/bot{bot_token}/getChatMembersCount"
+                    params_count = {"chat_id": telegram_chat_id}
+                    try:
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(url_count, params=params_count) as response_count:
+                                if response_count.status == 200:
+                                    data_count = await response_count.json()
+                                    if data_count.get("ok"):
+                                        chat_members_count = data_count.get("result", 0)
+                                        # Считаем число связей в БД
+                                        db_links = [l for l in self.chat_employees if l['chat_id'] == chat_id and l['is_active']]
+                                        db_count = len(db_links)
+                                        unknown_count = chat_members_count - db_count
+                                        logger.info(f"chat_id={chat_id}: members_count={chat_members_count}, db_count={db_count}, unknown_count={unknown_count}")
+                                        if chat.get('user_num') == chat_members_count and chat.get('unknown_user') == unknown_count:
+                                            logger.info(f"chat_id={chat_id}: counts match, nothing to update")
+                                        else:
+                                            logger.info(f"chat_id={chat_id}: updating user_num={chat_members_count}, unknown_user={unknown_count}")
+                                            async with self.pool.acquire() as conn:
+                                                await conn.execute("""
+                                                    UPDATE chats SET user_num = $1, unknown_user = $2, updated_at = NOW() WHERE chat_id = $3
+                                                """, chat_members_count, unknown_count, chat_id)
+                                    else:
+                                        logger.warning(f"chat_id={chat_id}: getChatMembersCount failed: {data_count}")
+                                else:
+                                    logger.warning(f"chat_id={chat_id}: getChatMembersCount HTTP {response_count.status}")
+                    except Exception as e:
+                        logger.error(f"chat_id={chat_id}: error in getChatMembersCount: {e}")
+                elif chat_type == 6:
+                    logger.info(f"[TYPE 6] Заблокированный чат обработка chat_id={chat_id}")
+                    # TODO: обработка заблокированного чата
+            # Старый цикл по updates
             updates = await self.fetch_updates(bot_token, bot_id)
             async with self.pool.acquire() as conn:
                 for update in updates:
