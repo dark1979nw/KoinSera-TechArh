@@ -1,6 +1,18 @@
 #version: '0.5'
 
 services:
+  bot-service:
+    build: ./bot_service
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-master:5432/postgres
+      - SERVICE_INTERVAL=30
+      - UPDATES_LOOKBACK_HOURS=24
+    depends_on:
+      postgres-master:
+        condition: service_healthy
+    networks:
+      - app-network
+
   backend-1:
     build: ./backend
     environment:

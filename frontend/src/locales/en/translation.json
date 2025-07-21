@@ -6,7 +6,8 @@
     "loading": "Loading...",
     "error": "An error occurred",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "delete": "Delete"
   },
   "auth": {
     "accountInactive": "Account is inactive. Please contact administrator",
@@ -29,29 +30,40 @@
     "registerButton": "Register",
     "haveAccount": "Already have an account?"
   },
-  "home": {
-    "workingOnCreation": "We are working on creating something amazing!"
+  "bots": {
+    "title": "Bots Management",
+    "name": "Bot Name",
+    "token": "Bot Token",
+    "isActive": "Active",
+    "createdAt": "Created At",
+    "actions": "Actions",
+    "addNew": "Add New Bot",
+    "editBot": "Edit Bot",
+    "edit": "Edit",
+    "delete": "Delete",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "confirmDelete": "Are you sure you want to delete this bot?"
   },
   "admin": {
-    "title": "Admin Panel",
-    "users": {
-      "title": "Users",
-      "login": "Login",
-      "email": "Email",
-      "firstName": "First Name",
-      "lastName": "Last Name",
-      "company": "Company",
-      "language": "Language",
-      "isActive": "Active",
-      "isAdmin": "Administrator",
-      "createdAt": "Created At",
-      "lastLogin": "Last Login",
-      "actions": "Actions",
-      "changePassword": "Change Password",
-      "makeAdmin": "Make Administrator",
-      "removeAdmin": "Remove Administrator",
-      "activate": "Activate User",
-      "deactivate": "Deactivate User"
+    "title": "Admin Panel"
+  },
+  "users": {
+    "title": "Users",
+    "addNew": "Add New User",
+    "fullName": "Full Name",
+    "telegramUsername": "Telegram Username",
+    "telegramUserId": "Telegram User ID",
+    "isActive": "Active",
+    "isExternal": "External",
+    "isBot": "Bot",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At",
+    "actions": "Actions",
+    "editUser": "Edit User",
+    "confirmDelete": "Are you sure you want to delete this user?",
+    "validation": {
+      "fullNameRequired": "Full Name is required"
     }
   },
   "validation": {
@@ -64,6 +76,9 @@
     "loginAlphanumeric": "Login must contain only letters and numbers",
     "nameLength": "Name must be between 1 and 50 characters",
     "companyLength": "Company name must not exceed 100 characters"
+  },
+  "home": {
+    "workingOnCreation": "We are working on creating something amazing!"
   },
   "dashboard": {
     "welcome": "Welcome to KoinSera",
@@ -78,6 +93,20 @@
       "profile": "Profile",
       "finance": "Finance",
       "admin": "Administration"
+    },
+    "chats": {
+      "title": "Chats",
+      "type": "Type",
+      "status": "Status",
+      "userNum": "Users",
+      "unknownUser": "Unknown",
+      "createdAt": "Created At",
+      "updatedAt": "Updated At",
+      "telegramChatId": "Telegram Chat ID",
+      "addNew": "Add New Chat",
+      "actions": "Actions",
+      "confirmDeleteTitle": "Delete chat?",
+      "confirmDeleteText": "Are you sure you want to delete this chat?"
     }
   }
 }

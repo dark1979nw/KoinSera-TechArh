@@ -1,0 +1,11 @@
+/* Синий фон для новых чатов */
+.chat-row-new {
+  background-color: #e3f0ff !important;
+  color: #003366 !important;
+}
+
+/* Красный фон для удалённых/заблокированных чатов */
+.chat-row-deleted {
+  background-color: #ffeaea !important;
+  color: #a30000 !important;
+} 
